@@ -76,12 +76,14 @@ void OFFModel::normalize_loc() {
             zs.push_back(curr_vert.z);
         }
     }
+    //Calculate this so that we can normalize the off models's size
     float x_range = *std::max_element(xs.begin(), xs.end()) - *std::min_element(xs.begin(), xs.end());
     float y_range = *std::max_element(ys.begin(), ys.end()) - *std::min_element(ys.begin(), ys.end());
     float z_range = *std::max_element(zs.begin(), zs.end()) - *std::min_element(zs.begin(), zs.end());
     float max_dim = std::max(x_range, std::max(y_range, z_range));
 
     // move barycenter to origin and divide all vertices by max dimension
+    //normalize location and size
     glm::vec3 bary = calc_bary();
     for (Vertex& v : vertices) {
         v.x -= bary.x;
