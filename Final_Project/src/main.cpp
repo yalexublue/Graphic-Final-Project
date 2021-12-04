@@ -127,6 +127,7 @@ std::vector<Vertex> bumpyVert;
 std::vector<Indice> sphereInd;
 std::vector<Vertex> sphereVert;
 std::vector<glm::vec3> normDataSeparate;
+glm::vec3 lightDisplayPos;
 std::vector<OFFModel*> models;
 Camera camera;
 Light light;
@@ -749,7 +750,10 @@ int main() {
         light.direction.x = 2 * glm::sin(rotation);
         light.direction.z = 2 * glm::cos(rotation);
         rotation += 0.0025;
-        lightSource->moveToCoord(light.direction);
+        lightDisplayPos.x = -light.direction.x;
+        lightDisplayPos.y = -light.direction.y;
+        lightDisplayPos.z = -light.direction.z;
+        lightSource->moveToCoord(lightDisplayPos);
 
         light.activate(uniformLightColor, uniformAmbient, uniformDiffuse, uniformLightDirection);
         glUniform1f(uniformSpecular, 0.9f);
