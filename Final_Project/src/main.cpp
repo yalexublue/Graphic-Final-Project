@@ -591,6 +591,7 @@ int main() {
         })glsl";
 
     //TODO: add shader for light source
+    //learn openGL reference, BLOOM.
     const std::string lightVertexShader = R"glsl(
         #version 300 core
 
@@ -744,6 +745,7 @@ int main() {
 
         //light orbiting with speed 0.0025
         //TODO: add sphere at light.direction.x, y, x.
+        //Here light.direction is tha shadow's exact location
         light.direction.x = 2 * glm::sin(rotation);
         light.direction.z = 2 * glm::cos(rotation);
         rotation += 0.0025;

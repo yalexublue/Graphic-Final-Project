@@ -96,15 +96,23 @@ void OFFModel::normalize_loc() {
 }
 
 void OFFModel::moveToCoord (glm::vec3 toLoc){
-    // normalize to the center of the space
-
-    // move barycenter to origin and divide all vertices by max dimension
+    // move to location
     glm::vec3 bary = calc_bary();
     for (Vertex& v : vertices) {
-        v.x += toLoc.x;
-        v.y += toLoc.y;
-        v.z += toLoc.z;
+        v.x += (toLoc.x - bary.x);
+        v.y += (toLoc.y - bary.y);
+        v.z += (toLoc.z - bary.z);
     }
+    //Update VBO after
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_DYNAMIC_DRAW);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 }
 
 void OFFModel::render_model() {
