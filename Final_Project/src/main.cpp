@@ -268,6 +268,7 @@ void key_callback(GLFWwindow* window, int key, int code, int action, int mode) {
                 models[selectedObj]->rotate(-30, 2);
             }
             break;
+        /*
         case GLFW_KEY_W:
             if (action == GLFW_PRESS) {
                 camera.x = std::max(camera.x - 0.2, 0.01);
@@ -280,6 +281,7 @@ void key_callback(GLFWwindow* window, int key, int code, int action, int mode) {
                 camera.update();
             }
             break;
+        */
         case GLFW_KEY_A:
             if (action == GLFW_PRESS) {
                 camera.y -= 0.2;
@@ -402,7 +404,7 @@ int main() {
     #endif
 
     // Create a windowed mode window and its OpenGL context
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    window = glfwCreateWindow(1280, 960, "Hello World", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return -1;
