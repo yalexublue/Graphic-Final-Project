@@ -15,30 +15,7 @@
 
 int winWidth;
 int winHeight;
-float cubeVertData[] = {
-        0.5f, 0.5f, 0.5f,
-        -0.5f, 0.5f, 0.5f,
-        -0.5f, -0.5f, 0.5f,
-        0.5f, -0.5f, 0.5f,
-        0.5f, 0.5f, -0.5f,
-        -0.5f, 0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        0.5f, -0.5f, -0.5f
-};
-unsigned int cubeIndData[] = {
-        1, 3, 0,
-        2, 3, 1,
-        7, 5, 4,
-        7, 6, 5,
-        0, 4, 5,
-        5, 1, 0,
-        6, 3, 2,
-        6, 7, 3,
-        2, 1, 5,
-        6, 2, 5,
-        3, 4, 0,
-        3, 7, 4
-};
+
 float cubemapVert[] = {
         -1.0f,  1.0f, -1.0f,
         -1.0f, -1.0f, -1.0f,
@@ -109,7 +86,6 @@ float planeData[] = {
         0.0f, 1.0f, 0.0f
 };
 int selectedObj = -1;
-bool hasRedShadow = false;
 bool hadEnvMapping = false;
 bool mouseHolding = false;
 float refraction = 0.5;
@@ -148,6 +124,8 @@ std::vector<Indice> rabbitInd;
 std::vector<Vertex> rabbitVert;
 std::vector<Indice> bumpyInd;
 std::vector<Vertex> bumpyVert;
+std::vector<Indice> sphereInd;
+std::vector<Vertex> sphereVert;
 std::vector<glm::vec3> normDataSeparate;
 std::vector<OFFModel*> models;
 Camera camera;
@@ -203,7 +181,7 @@ void key_callback(GLFWwindow* window, int key, int code, int action, int mode) {
     switch (key) {
         case GLFW_KEY_1:
             if (action == GLFW_PRESS) {
-                OFFModel *mesh = new OFFModel(cubeVert, cubeInd);
+                OFFModel *mesh = new OFFModel(sphereVert, sphereInd);
                 models.push_back(mesh);
             }
             break;
@@ -329,11 +307,6 @@ void key_callback(GLFWwindow* window, int key, int code, int action, int mode) {
             if (action == GLFW_PRESS && selectedObj >= 0) {
                 models.erase(models.begin() + selectedObj);
                 selectedObj = -1;
-            }
-            break;
-        case GLFW_KEY_R:
-            if (action == GLFW_PRESS) {
-                hasRedShadow = !hasRedShadow;
             }
             break;
         case GLFW_KEY_E:
@@ -499,7 +472,6 @@ int main() {
         in vec4 lightPos;
         out vec4 outColor;
         uniform vec3 color;
-        uniform bool hasRedShadow;
         uniform bool hasEnv;
         uniform float refraction;
         struct Light{
@@ -540,10 +512,7 @@ int main() {
 
         vec4 find_light_color() {
             float shadowFactor = ShadowCalculation(light);
-            if (hasRedShadow && shadowFactor > 0.0005) {
-                return vec4(1, 0, 0, 1);
-            }
-
+            //no need for red shadow
             vec3 direction = normalize(-light.direction);
             vec4 ambientColor = vec4(light.color, 1.0f) * light.ambient;
             float diffuseFactor = max(dot(normalize(normal), normalize(direction)), 0.0f);
@@ -566,9 +535,12 @@ int main() {
             vec3 R = refract(I, normalize(normal), refraction);
             vec4 FragColor = find_light_color();
             //used to toggle environment mapping on and off
-            if (hasEnv) {
+            if (hasEnv)
+            {
                 outColor = vec4(texture(cubemapVert, R).rgb, 1.0);
-            } else {
+            }
+            else
+            {
                 outColor = vColor * vec4(color, 1.0f) * FragColor;
             }
     })glsl";
@@ -614,53 +586,41 @@ int main() {
             FragColor = texture(cubemapVert, TexCoords);
         })glsl";
 
+    //TODO: add shader for light source
+    const std::string lightVertexShader = R"glsl(
+        #version 300 core
 
+        void main(){
+            //add vertex shader
+
+        })glsl";
+
+    const std::string lightFragmentShader = R"glsl(
+        #version 300 core
+
+        void main(){
+            //Add fragment shader
+
+        })glsl";
+
+    loadOff(sphereInd, sphereVert, "../data/sphere.off");
     loadOff(rabbitInd, rabbitVert, "../data/bunny.off");
     loadOff(bumpyInd, bumpyVert, "../data/bumpy_cube.off");
-    //add cube data
-    int vCount = 0;
-    for (int i = 0; i < 8; i++){
-        float x = cubeVertData[vCount];
-        float y = cubeVertData[vCount + 1];
-        float z = cubeVertData[vCount + 2];
-        //std::cout << x << ", " << y << ", " << z << std::endl;
-        switch (i % 3) {
-            case 0:
-                cubeVert.push_back(Vertex(x, y, z, 1, 1, 1, 0, 0, 0, 0, 0));
-                break;
-            case 1:
-                cubeVert.push_back(Vertex(x, y, z, 1, 1, 1, 0, 0, 0, 1, 0));
-                break;
-            case 2:
-                cubeVert.push_back(Vertex(x, y, z, 1, 1, 1, 0, 0, 0, 0.5, 1));
-                break;
-        }
-        vCount += 3;
-    }
 
-    int iCount = 0;
-    for (int i = 0; i < 12; i++){
-        int i1 = cubeIndData[iCount];
-        int i2 = cubeIndData[iCount + 1];
-        int i3 = cubeIndData[iCount + 2];
-        cubeInd.push_back(Indice(i1, i2, i3));
-        iCount += 3;
-    }
     //vert norm calculation
     calcNorm(rabbitInd, rabbitVert);
     calcNorm(bumpyInd, bumpyVert);
     calcNorm(cubeInd, cubeVert);
     camera = Camera(glm::vec3(-2, 1, 7), glm::vec3(0, 1, 0));
-    //light class object, a light generated with disignated parameters
     light = Light(10000, 10000, 1.0f, 1.0f, 1.0f, 0.2f, 0.5f, 3.0f, -1.0f, -3.0f);
     proj = glm::perspective(glm::radians(45.0f), (float)winWidth / winHeight, 0.1f, 100.0f);
     Program program(vertexShader, fragShader);
     Program shadow_program(shadowVertexShader, shadowFragmentShader);
     Program cubemap_program(cubemapVertexShader, cubemapFragmentShader);
-    //bind cubemapVert data
+
+
     glGenVertexArrays(1, &VAOCubemap);
     glGenBuffers(1, &VBOCubemap);
-    //std::cout << "cubemapVert VAO, VBO: " << VAOCubemap << ", " << VBOCubemap << std::endl;
     glBindVertexArray(VAOCubemap);
     glBindBuffer(GL_ARRAY_BUFFER, VBOCubemap);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cubemapVert), &cubemapVert, GL_STATIC_DRAW);
@@ -716,8 +676,7 @@ int main() {
 
         glBindVertexArray(0);
 
-        //drawing models, for red shadow
-
+        //For shadow rendering
         for(size_t i = 0; i < models.size(); i++) {
             if (models[i]->hasEnv)
                 glUniform1i(uniformEnvMapping, GL_TRUE);
@@ -725,7 +684,7 @@ int main() {
                 glUniform1i(uniformEnvMapping, GL_FALSE);
             glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(models[i]->model));
             if (selectedObj == i) {
-                //std::cout << "mouse is holding" << std::endl;
+
                 glUniform3f(uniformColor, 1.0f, 0.0f, 0.0f);
                 models[i]->render_model();
                 glUniform1i(uniformEnvMapping, GL_FALSE);
@@ -735,6 +694,7 @@ int main() {
                 glUniform3f(uniformColor, 1.0f, 1.0f, 1.0f);
             }
         }
+
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0, 0, winWidth * 2, winHeight * 2);
@@ -752,7 +712,6 @@ int main() {
         uniformCamPos = glGetUniformLocation(shader_ID, "camera_pos");
         uniformSpecular = glGetUniformLocation(shader_ID, "specular");
         uniformShine = glGetUniformLocation(shader_ID, "shininess");
-        uniformRedShadow = glGetUniformLocation(shader_ID, "hasRedShadow");
         uniformEnvMapping = glGetUniformLocation(shader_ID, "hasEnv");
         uniformRefract = glGetUniformLocation(shader_ID, "refraction");
         program.use();
@@ -760,10 +719,7 @@ int main() {
         glUniformMatrix4fv(uniformProj, 1, GL_FALSE, glm::value_ptr(proj));
         glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(camera.getLookAt()));
         glUniform3f(uniformCamPos, camera.position.x, camera.position.y, camera.position.z);
-        if (hasRedShadow)
-            glUniform1i(uniformRedShadow, GL_TRUE);
-        else
-            glUniform1i(uniformRedShadow, GL_FALSE);
+
 
         if (hadEnvMapping)
             glUniform1i(uniformEnvMapping, GL_TRUE);
