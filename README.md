@@ -1,2 +1,2 @@
-# Graphic-Final-Project
- 
+# Interactive Computer Graphic Final Project
+
