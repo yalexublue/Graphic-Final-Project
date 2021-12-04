@@ -6,32 +6,6 @@ OFFModel::OFFModel(std::vector<Vertex> in_vert, std::vector<Indice> in_ind) : OF
     this->vertices = in_vert;
     this->indices = in_ind;
     //vertices data contains pos, norm
-
-    //read in data check
-    /*
-    for (int i = 0; i < vertices.size(); i++){
-        std::cout << vertices[i].x <<", " << vertices[i].y << ", " << vertices[i].z << std::endl;
-
-    }
-    for (int i = 0; i < vertices.size(); i++){
-        std::cout << indices[i].first <<", " << indices[i].second << ", " << indices[i].third << std::endl;
-
-    }
-     */
-
-
-    /*
-    std::vector<glm::vec3> tempVer;
-    std::vector<glm::vec3> tempColor;
-    std::vector<glm::vec3> tempNorm;
-    std::vector<glm::vec2> tempTex;
-    for (int i = 0; i < vertices.size(); i++){
-        tempVer.push_back(glm::vec3(vertices[i].x, vertices[i].y, vertices[i].z));
-        tempColor.push_back(glm::vec3(vertices[i].r, vertices[i].g, vertices[i].b));
-        tempNorm.push_back(glm::vec3(vertices[i].xNorm, vertices[i].yNorm, vertices[i].zNorm));
-        tempTex.push_back(glm::vec2(vertices[i].xTex, vertices[i].yTex));
-    }
-     */
     normalize_loc();
     hasEnv = false;
     verticesArr = verttoArr();
@@ -90,7 +64,7 @@ glm::vec3 OFFModel::calc_bary() {
 }
 
 void OFFModel::normalize_loc() {
-    // find max dimension
+    // normalize to the center of the space
     std::vector<float> xs, ys, zs;
     for (size_t i = 0; i < vertices.size(); i++) {
         Vertex curr_vert = vertices.at(i);
@@ -119,6 +93,17 @@ void OFFModel::normalize_loc() {
     }
 }
 
+void OFFModel::moveToCoord (glm::vec3 toLoc){
+    // normalize to the center of the space
+
+    // move barycenter to origin and divide all vertices by max dimension
+    glm::vec3 bary = calc_bary();
+    for (Vertex& v : vertices) {
+        v.x += toLoc.x;
+        v.y += toLoc.y;
+        v.z += toLoc.z;
+    }
+}
 
 void OFFModel::render_model() {
     //Repoint to each model's own VAO

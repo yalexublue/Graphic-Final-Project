@@ -130,6 +130,7 @@ std::vector<glm::vec3> normDataSeparate;
 std::vector<OFFModel*> models;
 Camera camera;
 Light light;
+OFFModel *lightSource;
 
 void key_callback(GLFWwindow* window, int key, int code, int action, int mode);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
@@ -379,6 +380,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     //std::cout << "selected model index is: " << selectedObj << std::endl;
 }
 
+
 int main() {
     GLFWwindow* window;
 
@@ -590,6 +592,11 @@ int main() {
     const std::string lightVertexShader = R"glsl(
         #version 300 core
 
+        layout (location = 0) in vec3 pos;
+        layout (location = 1) in vec3 color;
+        layout (location = 2) in vec3 norm;
+        layout (location = 3) in vec2 tex;
+
         void main(){
             //add vertex shader
 
@@ -611,8 +618,14 @@ int main() {
     calcNorm(rabbitInd, rabbitVert);
     calcNorm(bumpyInd, bumpyVert);
     calcNorm(cubeInd, cubeVert);
+
     camera = Camera(glm::vec3(-2, 1, 7), glm::vec3(0, 1, 0));
+    //Generate the light source shape (the sun)
     light = Light(10000, 10000, 1.0f, 1.0f, 1.0f, 0.2f, 0.5f, 3.0f, -1.0f, -3.0f);
+    lightSource = new OFFModel(sphereVert, sphereInd);
+    std::cout << "light location is: " << light.direction.x << ", " << light.direction.y  << ", " << light.direction.z << std::endl;
+    lightSource->moveToCoord(light.direction);
+
     proj = glm::perspective(glm::radians(45.0f), (float)winWidth / winHeight, 0.1f, 100.0f);
     Program program(vertexShader, fragShader);
     Program shadow_program(shadowVertexShader, shadowFragmentShader);
@@ -675,7 +688,8 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glBindVertexArray(0);
-
+        //TODO: light location check
+        std::cout << "light location is: " << light.direction.x << ", " << light.direction.y  << ", " << light.direction.z << std::endl;
         //For shadow rendering
         for(size_t i = 0; i < models.size(); i++) {
             if (models[i]->hasEnv)
@@ -720,15 +734,19 @@ int main() {
         glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(camera.getLookAt()));
         glUniform3f(uniformCamPos, camera.position.x, camera.position.y, camera.position.z);
 
-
         if (hadEnvMapping)
             glUniform1i(uniformEnvMapping, GL_TRUE);
         else
             glUniform1i(uniformEnvMapping, GL_FALSE);
         glUniform1f(uniformRefract, refraction);
+
+        //light orbiting with speed 0.0025
+        //TODO: add sphere at light.direction.x, y, x.
         light.direction.x = 2 * glm::sin(rotation);
         light.direction.z = 2 * glm::cos(rotation);
         rotation += 0.0025;
+        lightSource->moveToCoord(light.direction);
+
         light.activate(uniformLightColor, uniformAmbient, uniformDiffuse, uniformLightDirection);
         glUniform1f(uniformSpecular, 0.9f);
         glUniform1f(uniformShine, 120);
@@ -737,6 +755,10 @@ int main() {
         program.uniformShadow(2);
         program.uniformLight(light.getMatrix());
         light.shadow->useTexture(GL_TEXTURE2);
+
+        //TODO: Render light source, later set out as a function
+        glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(lightSource->model));
+        lightSource->render_model();
 
         //model redraw with mouse toggle activated
         for(size_t i = 0; i < models.size(); i++) {
@@ -786,6 +808,7 @@ int main() {
         glBindVertexArray(VAOCubemap);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap_tex);
+        //draw sky box
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
 

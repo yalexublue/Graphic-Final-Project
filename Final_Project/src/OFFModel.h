@@ -67,6 +67,7 @@ public:
     void render_model();
     void render_model(GLuint id);
     void normalize_loc();
+    void moveToCoord (glm::vec3 toLoc);
     float* verttoArr(){
         int size_of_arr = 11 * vertices.size();
         float output[size_of_arr];
