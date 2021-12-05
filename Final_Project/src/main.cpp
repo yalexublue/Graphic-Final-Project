@@ -117,6 +117,9 @@ GLuint uniformDiffuse = 0;
 GLuint uniformRedShadow = 0;
 GLuint uniformEnvMapping = 0;
 GLuint uniformRefract = 0;
+GLuint hdrFBO = 0;
+GLuint colorBuffers[2];
+
 
 std::vector<Indice> cubeInd;
 std::vector<Vertex> cubeVert;
@@ -383,6 +386,28 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     //std::cout << "selected model index is: " << selectedObj << std::endl;
 }
 
+//TODO: set up a legitimate bloom calculation funciton
+
+void bloom(){
+    glGenFramebuffers(1, &hdrFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+    glGenTextures(2, colorBuffers);
+    for (int i = 0; i < 2; i++){
+        glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0);
+
+        GLuint attachments[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+        glDrawBuffers(2, attachments);
+    }
+}
+
+
+
 
 int main() {
     GLFWwindow* window;
@@ -548,7 +573,7 @@ int main() {
             {
                 outColor = vColor * vec4(color, 1.0f) * FragColor;
             }
-    })glsl";
+        })glsl";
 
     const std::string shadowVertexShader = R"glsl(
         #version 330
@@ -591,7 +616,7 @@ int main() {
             FragColor = texture(cubemapVert, TexCoords);
         })glsl";
 
-    //TODO: add shader for light source
+    //TODO: setting up HDR for a brighter color effect
     //learn openGL reference, BLOOM.
     const std::string lightVertexShader = R"glsl(
         #version 300 core
@@ -600,17 +625,27 @@ int main() {
         layout (location = 1) in vec3 color;
         layout (location = 2) in vec3 norm;
         layout (location = 3) in vec2 tex;
+        out vec2 texCoords;
 
         void main(){
-            //add vertex shader
+            gl_Position = proj * view * model * vec4(pos, 1.0);
+            texCoords = tex;
 
         })glsl";
 
     const std::string lightFragmentShader = R"glsl(
         #version 300 core
 
+        layout (location = 0) out vec4 fragColor;
+        layout (location = 1) out vec4 brightColor;
+
         void main(){
-            //Add fragment shader
+            fragColor = vec4(lighting, 1.0);
+            float brightness = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+            if (brightness > 1.0)
+                brightColor = vec4(fragColor.rgb, 1.0);
+            else
+                brightColor = vec4(0.0, 0.0, 0.0, 1.0);
 
         })glsl";
 
@@ -621,7 +656,7 @@ int main() {
     //vert norm calculation
     calcNorm(rabbitInd, rabbitVert);
     calcNorm(bumpyInd, bumpyVert);
-    calcNorm(cubeInd, cubeVert);
+    calcNorm(sphereInd, sphereVert);
 
     camera = Camera(glm::vec3(-2, 1, 7), glm::vec3(0, 1, 0));
     //Generate the light source shape (the sun)
